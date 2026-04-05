@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background-color: #f8fafc;
   min-height: 100vh;
