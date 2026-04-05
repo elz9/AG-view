@@ -195,23 +195,15 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         {STATS.map((s) => {
-          const Icon = s.icon;
           return (
             <div
               key={s.label}
-              className="bg-white rounded-xl border border-slate-100 p-4 hover:border-slate-200 transition-colors"
+              className="bg-white rounded-lg border border-slate-100 p-3 hover:border-slate-200 transition-colors"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className={cn("w-8 h-8 rounded-lg border flex items-center justify-center", COLOR_ICON[s.color])}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 mt-0.5" />
-              </div>
-              <p className="text-2xl font-bold text-slate-900 tracking-tight">{s.value}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
-              <p className="text-[11px] text-slate-400 mt-1.5">{s.sub}</p>
+              <p className="text-lg font-semibold text-slate-900">{s.value}</p>
+              <p className="text-xs text-slate-400">{s.label}</p>
             </div>
           );
         })}
