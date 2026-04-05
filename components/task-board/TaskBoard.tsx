@@ -4,19 +4,21 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   Plus,
-  MoreHorizontal,
   Bot,
   User,
   Clock,
   Zap,
-  GripVertical,
   CheckCircle2,
   Circle,
   AlertCircle,
   Timer,
+  MoreHorizontal,
+  Terminal,
+  GitBranch,
+  Info,
 } from "lucide-react";
 
-type TaskStatus = "backlog" | "in-progress" | "review" | "done";
+type TaskStatus = "queued" | "in-progress" | "review" | "done";
 
 interface Task {
   id: string;
@@ -24,141 +26,136 @@ interface Task {
   status: TaskStatus;
   assignee: "human" | "agent";
   agentName?: string;
+  cli?: string;
   priority: "low" | "medium" | "high";
   tags: string[];
   tokens?: number;
   cost?: string;
   duration?: string;
+  branch?: string;
+  autoDetected?: boolean;
 }
 
-const INITIAL_TASKS: Task[] = [
+const TASKS: Task[] = [
   {
     id: "1",
-    title: "Setup agent infrastructure & WebSocket layer",
-    status: "backlog",
+    title: "Add rate limiting to /api/auth/login endpoint",
+    status: "queued",
     assignee: "human",
     priority: "high",
-    tags: ["infra", "backend"],
+    tags: ["security", "api"],
   },
   {
     id: "2",
-    title: "Configure LLM API endpoints and rate limits",
+    title: "Refactor auth middleware to use RS256 JWT",
     status: "in-progress",
     assignee: "agent",
-    agentName: "Agent-1",
+    agentName: "auth-refactor",
+    cli: "Claude Code",
     priority: "high",
-    tags: ["api"],
+    tags: ["auth"],
     tokens: 14200,
     cost: "$0.71",
     duration: "24m",
+    branch: "feat/auth-v2",
+    autoDetected: true,
   },
   {
     id: "3",
-    title: "Implement memory retrieval with vector DB",
+    title: "Generate REST endpoint stubs for product routes",
     status: "in-progress",
     assignee: "agent",
-    agentName: "Agent-3",
+    agentName: "api-endpoints",
+    cli: "Codex CLI",
     priority: "medium",
-    tags: ["memory", "ai"],
+    tags: ["api"],
     tokens: 21300,
     cost: "$1.06",
     duration: "38m",
+    branch: "feat/product-api",
+    autoDetected: true,
   },
   {
     id: "4",
-    title: "Write unit tests for auth middleware",
+    title: "Write unit tests for user authentication flow",
     status: "review",
     assignee: "agent",
-    agentName: "Agent-2",
+    agentName: "test-suite",
+    cli: "Claude Code",
     priority: "medium",
     tags: ["testing"],
     tokens: 8900,
     cost: "$0.44",
-    duration: "11m",
+    duration: "14m",
+    branch: "feat/auth-tests",
+    autoDetected: true,
   },
   {
     id: "5",
-    title: "Deploy staging environment to Fly.io",
-    status: "done",
+    title: "Fix TypeScript strict mode errors in utils/",
+    status: "queued",
     assignee: "human",
     priority: "low",
-    tags: ["devops"],
+    tags: ["typescript"],
   },
   {
     id: "6",
-    title: "Design token usage dashboard charts",
-    status: "backlog",
+    title: "Deploy auth service to staging",
+    status: "done",
     assignee: "human",
-    priority: "medium",
-    tags: ["ui", "charts"],
+    priority: "high",
+    tags: ["devops"],
+    branch: "feat/auth-v2",
   },
   {
     id: "7",
-    title: "Integrate Slack webhook for stuck-agent alerts",
+    title: "Update OpenAPI spec with new route definitions",
     status: "done",
     assignee: "agent",
-    agentName: "Agent-1",
-    priority: "high",
-    tags: ["alerts", "integrations"],
-    tokens: 9800,
-    cost: "$0.49",
-    duration: "19m",
+    agentName: "api-endpoints",
+    cli: "Codex CLI",
+    priority: "low",
+    tags: ["docs"],
+    tokens: 5600,
+    cost: "$0.28",
+    duration: "9m",
+    autoDetected: true,
   },
 ];
 
-const COLUMNS: {
-  id: TaskStatus;
-  label: string;
-  color: string;
-  iconColor: string;
-}[] = [
-  {
-    id: "backlog",
-    label: "Backlog",
-    color: "bg-slate-100 text-slate-600",
-    iconColor: "text-slate-400",
-  },
-  {
-    id: "in-progress",
-    label: "In Progress",
-    color: "bg-indigo-50 text-indigo-700",
-    iconColor: "text-indigo-400",
-  },
-  {
-    id: "review",
-    label: "Review",
-    color: "bg-amber-50 text-amber-700",
-    iconColor: "text-amber-400",
-  },
-  {
-    id: "done",
-    label: "Done",
-    color: "bg-emerald-50 text-emerald-700",
-    iconColor: "text-emerald-400",
-  },
+const COLUMNS: { id: TaskStatus; label: string; accent: string; iconColor: string; count?: boolean }[] = [
+  { id: "queued", label: "Queued", accent: "bg-slate-100 text-slate-600", iconColor: "text-slate-400" },
+  { id: "in-progress", label: "In Progress", accent: "bg-indigo-50 text-indigo-700", iconColor: "text-indigo-400" },
+  { id: "review", label: "Review", accent: "bg-amber-50 text-amber-700", iconColor: "text-amber-400" },
+  { id: "done", label: "Done", accent: "bg-emerald-50 text-emerald-700", iconColor: "text-emerald-400" },
 ];
 
-const PRIORITY_CONFIG = {
-  high: { label: "High", class: "bg-red-50 text-red-600 border-red-100" },
-  medium: {
-    label: "Med",
-    class: "bg-amber-50 text-amber-600 border-amber-100",
-  },
-  low: { label: "Low", class: "bg-slate-50 text-slate-500 border-slate-100" },
+const PRIORITY_CFG = {
+  high: { label: "High", cls: "bg-red-50 text-red-600 border-red-100" },
+  medium: { label: "Med", cls: "bg-amber-50 text-amber-600 border-amber-100" },
+  low: { label: "Low", cls: "bg-slate-50 text-slate-400 border-slate-100" },
 };
 
 const COL_ICON = {
-  backlog: Circle,
+  queued: Circle,
   "in-progress": Timer,
   review: AlertCircle,
   done: CheckCircle2,
 };
 
-export default function TaskBoard() {
-  const [tasks] = useState<Task[]>(INITIAL_TASKS);
+const CLI_COLOR: Record<string, string> = {
+  "Claude Code": "bg-orange-50 text-orange-600",
+  "Codex CLI": "bg-green-50 text-green-600",
+  "OpenCode": "bg-blue-50 text-blue-600",
+};
 
-  const getTasksByStatus = (status: TaskStatus) =>
-    tasks.filter((t) => t.status === status);
+export default function TaskBoard() {
+  const [tasks] = useState<Task[]>(TASKS);
+
+  const byStatus = (s: TaskStatus) => tasks.filter((t) => t.status === s);
+  const inProgress = byStatus("in-progress").length;
+  const done = byStatus("done").length;
+  const autoDetectedCount = tasks.filter((t) => t.autoDetected).length;
 
   return (
     <div className="space-y-5 max-w-[1400px]">
@@ -167,56 +164,57 @@ export default function TaskBoard() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Task Board</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            {tasks.filter((t) => t.status === "in-progress").length} tasks in
-            progress · {tasks.filter((t) => t.status === "done").length}{" "}
-            completed
+            {inProgress} in progress · {done} done
           </p>
         </div>
-        <button className="flex items-center gap-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors">
-          <Plus className="w-3.5 h-3.5" />
-          Add Task
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-indigo-50 border border-indigo-100 px-2.5 py-1.5 rounded-lg">
+            <Zap className="w-3 h-3 text-indigo-400" />
+            <span className="text-indigo-600 font-medium">{autoDetectedCount} auto-detected</span>
+            <span>from agent sessions</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors">
+            <Plus className="w-3.5 h-3.5" />
+            Add Task
+          </button>
+        </div>
+      </div>
+
+      {/* Info banner */}
+      <div className="flex items-start gap-2.5 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl">
+        <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Tasks marked <span className="font-semibold text-indigo-600">auto-detected</span> were inferred from agent JSONL sessions — when an agent starts working, a card appears automatically. You can also add tasks manually and assign them to agents.
+        </p>
       </div>
 
       {/* Columns */}
       <div className="grid grid-cols-4 gap-4">
         {COLUMNS.map((col) => {
-          const colTasks = getTasksByStatus(col.id);
-          const ColIcon = COL_ICON[col.id];
+          const colTasks = byStatus(col.id);
+          const Icon = COL_ICON[col.id];
           return (
-            <div key={col.id} className="flex flex-col min-h-[200px]">
-              {/* Column header */}
+            <div key={col.id} className="flex flex-col">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <ColIcon className={cn("w-3.5 h-3.5", col.iconColor)} />
-                  <span className="text-xs font-semibold text-slate-700">
-                    {col.label}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
-                      col.color,
-                    )}
-                  >
+                  <Icon className={cn("w-3.5 h-3.5", col.iconColor)} />
+                  <span className="text-xs font-semibold text-slate-700">{col.label}</span>
+                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", col.accent)}>
                     {colTasks.length}
                   </span>
                 </div>
-                <button className="w-6 h-6 rounded-md flex items-center justify-center text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                <button className="w-5 h-5 rounded flex items-center justify-center text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-colors">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
 
-              {/* Cards */}
-              <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col gap-2">
                 {colTasks.map((task) => (
                   <TaskCard key={task.id} task={task} />
                 ))}
-
                 {colTasks.length === 0 && (
-                  <div className="border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center h-24">
-                    <p className="text-[11px] text-slate-300">
-                      Drop tasks here
-                    </p>
+                  <div className="border-2 border-dashed border-slate-100 rounded-xl h-20 flex items-center justify-center">
+                    <p className="text-[11px] text-slate-300">Empty</p>
                   </div>
                 )}
               </div>
@@ -229,15 +227,22 @@ export default function TaskBoard() {
 }
 
 function TaskCard({ task }: { task: Task }) {
-  const priority = PRIORITY_CONFIG[task.priority];
-
+  const p = PRIORITY_CFG[task.priority];
   return (
     <div className="bg-white border border-slate-100 rounded-xl p-3.5 hover:border-slate-200 hover:shadow-sm transition-all group cursor-pointer">
-      {/* Top row */}
+      {/* Auto-detected badge */}
+      {task.autoDetected && (
+        <div className="flex items-center gap-1 mb-2">
+          <Zap className="w-2.5 h-2.5 text-indigo-400" />
+          <span className="text-[9px] font-semibold text-indigo-500 uppercase tracking-wide">
+            auto-detected
+          </span>
+        </div>
+      )}
+
+      {/* Title */}
       <div className="flex items-start justify-between gap-2 mb-2.5">
-        <p className="text-xs font-medium text-slate-800 leading-relaxed flex-1">
-          {task.title}
-        </p>
+        <p className="text-xs font-medium text-slate-800 leading-relaxed flex-1">{task.title}</p>
         <button className="w-5 h-5 rounded flex items-center justify-center text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-all shrink-0">
           <MoreHorizontal className="w-3.5 h-3.5" />
         </button>
@@ -245,53 +250,56 @@ function TaskCard({ task }: { task: Task }) {
 
       {/* Tags */}
       {task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-1 mb-2.5">
           {task.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] bg-slate-50 border border-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md font-medium"
-            >
+            <span key={tag} className="text-[10px] bg-slate-50 border border-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md font-medium">
               {tag}
             </span>
           ))}
         </div>
       )}
 
-      {/* Token info for agent tasks */}
-      {task.assignee === "agent" && task.tokens && (
-        <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-indigo-50/60 rounded-lg border border-indigo-50">
-          <Zap className="w-3 h-3 text-indigo-400 shrink-0" />
-          <span className="text-[10px] text-indigo-600 font-medium">
-            {(task.tokens / 1000).toFixed(1)}k tokens
-          </span>
-          <span className="text-[10px] text-indigo-400">{task.cost}</span>
-          <Clock className="w-3 h-3 text-indigo-300 ml-auto shrink-0" />
-          <span className="text-[10px] text-indigo-400">{task.duration}</span>
+      {/* Branch */}
+      {task.branch && (
+        <div className="flex items-center gap-1 mb-2.5">
+          <GitBranch className="w-3 h-3 text-slate-300" />
+          <span className="text-[10px] text-slate-400 font-mono">{task.branch}</span>
         </div>
       )}
 
-      {/* Bottom row */}
+      {/* Token info */}
+      {task.assignee === "agent" && task.tokens && (
+        <div className="flex items-center gap-2 mb-2.5 px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+          <Zap className="w-3 h-3 text-slate-400 shrink-0" />
+          <span className="text-[10px] text-slate-600 font-medium">{(task.tokens / 1000).toFixed(1)}k tok</span>
+          <span className="text-[10px] text-slate-400">{task.cost}</span>
+          <Clock className="w-3 h-3 text-slate-300 ml-auto shrink-0" />
+          <span className="text-[10px] text-slate-400">{task.duration}</span>
+        </div>
+      )}
+
+      {/* Footer */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          {task.assignee === "agent" ? (
+        {task.assignee === "agent" ? (
+          <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-1 bg-slate-900 text-white px-1.5 py-0.5 rounded-md">
-              <Bot className="w-2.5 h-2.5" />
+              <Terminal className="w-2.5 h-2.5" />
               <span className="text-[10px] font-medium">{task.agentName}</span>
             </div>
-          ) : (
-            <div className="flex items-center gap-1 bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md">
-              <User className="w-2.5 h-2.5" />
-              <span className="text-[10px] font-medium">You</span>
-            </div>
-          )}
-        </div>
-        <span
-          className={cn(
-            "text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
-            priority.class,
-          )}
-        >
-          {priority.label}
+            {task.cli && (
+              <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-md", CLI_COLOR[task.cli] ?? "bg-slate-100 text-slate-500")}>
+                {task.cli}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md">
+            <User className="w-2.5 h-2.5" />
+            <span className="text-[10px] font-medium">Manual</span>
+          </div>
+        )}
+        <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-md border", p.cls)}>
+          {p.label}
         </span>
       </div>
     </div>

@@ -13,116 +13,108 @@ import {
   Circle,
   AlertCircle,
   ArrowUpRight,
+  Terminal,
+  DollarSign,
 } from "lucide-react";
 
 interface Project {
   id: string;
   name: string;
+  directory: string;
   description: string;
   status: "active" | "paused" | "completed";
-  agents: number;
-  tasksTotal: number;
-  tasksDone: number;
+  activeSessions: number;
+  totalSessions: number;
   tokens: number;
   cost: string;
   branch: string;
   lastActivity: string;
   color: string;
+  cliTools: string[];
 }
 
 const PROJECTS: Project[] = [
   {
     id: "1",
     name: "Auth Refactor",
-    description:
-      "Migrating legacy auth system to JWT with refresh token rotation",
+    directory: "~/projects/ag-desk",
+    description: "Migrating legacy auth to RS256 JWT with refresh token rotation",
     status: "active",
-    agents: 2,
-    tasksTotal: 12,
-    tasksDone: 8,
+    activeSessions: 2,
+    totalSessions: 8,
     tokens: 86400,
     cost: "$4.32",
     branch: "feat/auth-v2",
     lastActivity: "2m ago",
     color: "indigo",
+    cliTools: ["Claude Code"],
   },
   {
     id: "2",
-    name: "Test Coverage",
-    description:
-      "Increasing unit & integration test coverage to 80%+ across all modules",
+    name: "API Endpoints",
+    directory: "~/projects/ag-desk",
+    description: "Generating REST endpoint stubs for product and user routes",
     status: "active",
-    agents: 1,
-    tasksTotal: 20,
-    tasksDone: 9,
+    activeSessions: 1,
+    totalSessions: 5,
     tokens: 44200,
     cost: "$2.21",
-    branch: "feat/tests",
+    branch: "feat/product-api",
     lastActivity: "11m ago",
     color: "emerald",
+    cliTools: ["Codex CLI"],
   },
   {
     id: "3",
-    name: "Memory System v2",
-    description:
-      "Building vector-backed persistent memory with semantic search",
+    name: "Test Coverage",
+    directory: "~/projects/ag-desk",
+    description: "Unit and integration test coverage across auth and API modules",
     status: "active",
-    agents: 1,
-    tasksTotal: 8,
-    tasksDone: 6,
-    tokens: 102100,
-    cost: "$5.10",
-    branch: "feat/memory-v2",
+    activeSessions: 1,
+    totalSessions: 4,
+    tokens: 38100,
+    cost: "$1.91",
+    branch: "feat/tests",
     lastActivity: "38m ago",
     color: "violet",
+    cliTools: ["Claude Code"],
   },
   {
     id: "4",
-    name: "CI/CD Pipeline",
-    description:
-      "Automated deployment pipeline with staging and production gates",
+    name: "DB Schema",
+    directory: "~/projects/ag-desk",
+    description: "Designing and migrating Postgres schema for multi-tenant workspaces",
     status: "paused",
-    agents: 0,
-    tasksTotal: 6,
-    tasksDone: 6,
+    activeSessions: 0,
+    totalSessions: 3,
     tokens: 28900,
     cost: "$1.44",
-    branch: "feat/cicd",
+    branch: "feat/db",
     lastActivity: "2d ago",
     color: "amber",
+    cliTools: ["Claude Code"],
   },
   {
     id: "5",
-    name: "API Documentation",
-    description: "Generating comprehensive OpenAPI docs from codebase",
+    name: "API Docs",
+    directory: "~/projects/ag-desk",
+    description: "Auto-generating OpenAPI spec from codebase",
     status: "completed",
-    agents: 0,
-    tasksTotal: 5,
-    tasksDone: 5,
+    activeSessions: 0,
+    totalSessions: 2,
     tokens: 19200,
     cost: "$0.96",
     branch: "docs/api",
     lastActivity: "5d ago",
     color: "slate",
+    cliTools: ["OpenCode"],
   },
 ];
 
 const STATUS_CONFIG = {
-  active: {
-    label: "Active",
-    icon: Circle,
-    class: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  },
-  paused: {
-    label: "Paused",
-    icon: AlertCircle,
-    class: "bg-amber-50 text-amber-700 border-amber-100",
-  },
-  completed: {
-    label: "Done",
-    icon: CheckCircle2,
-    class: "bg-slate-100 text-slate-600 border-slate-200",
-  },
+  active: { label: "Active", icon: Circle, cls: "bg-emerald-50 text-emerald-700 border-emerald-100", dot: "bg-emerald-500 animate-pulse" },
+  paused: { label: "Paused", icon: AlertCircle, cls: "bg-amber-50 text-amber-700 border-amber-100", dot: "bg-amber-400" },
+  completed: { label: "Done", icon: CheckCircle2, cls: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-300" },
 };
 
 const ACCENT: Record<string, string> = {
@@ -141,18 +133,25 @@ const PROGRESS_COLOR: Record<string, string> = {
   slate: "bg-slate-300",
 };
 
+const CLI_COLOR: Record<string, string> = {
+  "Claude Code": "bg-orange-50 text-orange-600",
+  "Codex CLI": "bg-green-50 text-green-600",
+  "OpenCode": "bg-blue-50 text-blue-600",
+};
+
 export default function ProjectsView() {
   const active = PROJECTS.filter((p) => p.status === "active").length;
   const totalTokens = PROJECTS.reduce((s, p) => s + p.tokens, 0);
+  const totalCost = PROJECTS.reduce((s, p) => s + parseFloat(p.cost.replace("$", "")), 0);
+  const totalSessions = PROJECTS.reduce((s, p) => s + p.totalSessions, 0);
 
   return (
-    <div className="space-y-5 max-w-[1200px]">
+    <div className="space-y-5 max-w-[1100px]">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Projects</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            {active} active · {(totalTokens / 1000).toFixed(0)}k total tokens
-            used
+            {active} active · {totalSessions} sessions · ${totalCost.toFixed(2)} total spend
           </p>
         </div>
         <button className="flex items-center gap-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors">
@@ -161,20 +160,49 @@ export default function ProjectsView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      {/* Summary bar */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+            <Terminal className="w-4 h-4 text-indigo-600" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-slate-900 leading-none">{totalSessions}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Total sessions</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center">
+            <Zap className="w-4 h-4 text-violet-600" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-slate-900 leading-none">{(totalTokens / 1000).toFixed(0)}k</p>
+            <p className="text-xs text-slate-400 mt-0.5">Total tokens</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+            <DollarSign className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-slate-900 leading-none">${totalCost.toFixed(2)}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Total spend</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Project list */}
+      <div className="flex flex-col gap-3">
         {PROJECTS.map((project) => {
-          const progress = Math.round(
-            (project.tasksDone / project.tasksTotal) * 100,
-          );
+          const sessionPct = Math.round((project.activeSessions / Math.max(project.totalSessions, 1)) * 100);
           const status = STATUS_CONFIG[project.status];
-          const StatusIcon = status.icon;
 
           return (
             <div
               key={project.id}
               className={cn(
                 "bg-white rounded-xl border border-slate-100 border-l-4 p-4 hover:border-slate-200 hover:shadow-sm transition-all group cursor-pointer",
-                ACCENT[project.color],
+                ACCENT[project.color]
               )}
             >
               <div className="flex items-start gap-4">
@@ -183,49 +211,30 @@ export default function ProjectsView() {
                   <FolderOpen className="w-4 h-4 text-slate-500" />
                 </div>
 
-                {/* Main content */}
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      {project.name}
-                    </h3>
-                    <span
-                      className={cn(
-                        "text-[10px] font-semibold px-1.5 py-0.5 rounded-full border",
-                        status.class,
-                      )}
-                    >
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <h3 className="text-sm font-semibold text-slate-900">{project.name}</h3>
+                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full border", status.cls)}>
                       {status.label}
                     </span>
+                    {project.activeSessions > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                        {project.activeSessions} running
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                    {project.description}
-                  </p>
 
-                  {/* Progress bar */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          PROGRESS_COLOR[project.color],
-                        )}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                      {project.tasksDone}/{project.tasksTotal} tasks
-                    </span>
-                  </div>
+                  <p className="text-[11px] text-slate-500 font-mono mb-1">{project.directory}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3">{project.description}</p>
 
                   {/* Meta row */}
                   <div className="flex items-center gap-4 flex-wrap">
-                    {project.agents > 0 && (
-                      <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                        <Bot className="w-3 h-3" />
-                        {project.agents} agent{project.agents > 1 ? "s" : ""}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                      <Terminal className="w-3 h-3" />
+                      {project.totalSessions} sessions
+                    </span>
                     <span className="flex items-center gap-1 text-[11px] text-slate-500">
                       <GitBranch className="w-3 h-3" />
                       {project.branch}
@@ -238,6 +247,14 @@ export default function ProjectsView() {
                       <Clock className="w-3 h-3" />
                       {project.lastActivity}
                     </span>
+                    {/* CLI tools used */}
+                    <div className="flex items-center gap-1 ml-auto">
+                      {project.cliTools.map((cli) => (
+                        <span key={cli} className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full", CLI_COLOR[cli] ?? "bg-slate-100 text-slate-500")}>
+                          {cli}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
