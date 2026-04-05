@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import styles from "./TaskBoard.module.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const MOCK_TASKS = [
   { id: "1", title: "Setup agent infrastructure", status: "backlog", assignee: "human" },
@@ -23,27 +23,31 @@ export default function TaskBoard() {
   const getTasksByStatus = (status: string) => tasks.filter((t) => t.status === status);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2>Task Board</h2>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Task Board</h1>
+        <p className="text-sm text-slate-500">Manage your tasks</p>
       </div>
-      <div className={styles.board}>
+
+      <div className="grid grid-cols-4 gap-4">
         {COLUMNS.map((col) => (
-          <div key={col.id} className={styles.column}>
-            <div className={styles.columnHeader}>
-              <span className={styles.columnTitle}>{col.label}</span>
-              <span className={styles.columnCount}>{getTasksByStatus(col.id).length}</span>
+          <div key={col.id} className="bg-slate-50 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-medium text-slate-700">{col.label}</span>
+              <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                {getTasksByStatus(col.id).length}
+              </span>
             </div>
-            <div className={styles.columnContent}>
+            <div className="space-y-2">
               {getTasksByStatus(col.id).map((task) => (
-                <div key={task.id} className={styles.taskCard}>
-                  <div className={styles.taskTitle}>{task.title}</div>
-                  <div className={styles.taskMeta}>
-                    <span className={`${styles.assignee} ${styles[task.assignee]}`}>
+                <Card key={task.id} className="shadow-sm">
+                  <CardContent className="p-3">
+                    <p className="text-sm text-slate-700">{task.title}</p>
+                    <span className="text-xs">
                       {task.assignee === "agent" ? "🤖" : "👤"}
                     </span>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
