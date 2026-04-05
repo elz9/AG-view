@@ -18,10 +18,7 @@ export default function SidebarPage() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-[220px] h-screen bg-white border-r border-slate-200 flex flex-col fixed left-0 top-0 shadow-sm">
-      <div className="p-5 text-lg font-semibold text-slate-900 border-b border-slate-200">
-        AG-DEsk
-      </div>
+    <aside className="w-[220px] bg-white border-r border-slate-200 flex flex-col">
       <nav className="flex-1 p-3 flex flex-col gap-1">
         {NAV_ITEMS.map((item) => (
           <Link
